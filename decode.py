@@ -112,12 +112,21 @@ for idx, layer in enumerate(layers):
         bits = 4
     codebook_size = 2 ** bits
     codebook = np.fromfile(fin, dtype = np.float32, count = codebook_size)
-    bias = np.fromfile(fin, dtype = np.float32, count = net.params[layer][1].data.size)
-    np.copyto(net.params[layer][1].data, bias)
+    
+    # we can't access "net.params[layer][index]" directly
+    # it is neccesary to use __iter__ or either a loop:
+    for num, param in enumerate(net.params[layer]):
+        if num == 0:
+            net_data = param.data
+        else:
+            bias_data = param.data
+    
+    bias = np.fromfile(fin, dtype = np.float32, count = bias_data.size)
+    np.copyto(bias_data, bias)
 
     spm_stream = np.fromfile(fin, dtype = np.uint8, count = (nz_num[idx]-1) / (8/bits) + 1)
     ind_stream = np.fromfile(fin, dtype = np.uint8, count = (nz_num[idx]-1) / 2+1)
 
-    binary_to_net(net.params[layer][0].data, spm_stream, ind_stream, codebook, nz_num[idx])
+    binary_to_net(net_data, spm_stream, ind_stream, codebook, nz_num[idx])
 
 net.save(target)
