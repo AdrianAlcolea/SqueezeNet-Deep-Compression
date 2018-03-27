@@ -86,18 +86,20 @@ def binary_to_net(weights, spm_stream, ind_stream, codebook, num_nz):
 
     # Recover from binary stream
     spm = np.zeros(num_nz, np.uint8)
-    ind = np.zeros(num_nz, np.uint8)
+    ind = np.zeros(num_nz if num_nz % 2 == 0 else num_nz + 1, np.uint8)
     if slots == 2:
         spm[np.arange(0, num_nz, 2)] = spm_stream % (2**4)
         spm[np.arange(1, num_nz, 2)] = spm_stream / (2**4)
     else:
         spm = spm_stream
     ind[np.arange(0, num_nz, 2)] = ind_stream% (2**4)
-    ind[np.arange(1, num_nz, 2)] = ind_stream/ (2**4)
+    ind[np.arange(1, num_nz if num_nz % 2 == 0 else num_nz + 1, 2)] = ind_stream/ (2**4)
 
 
     # Recover the matrix
     ind = np.cumsum(ind+1)-1
+    if num_nz % 2 == 1:
+        ind = ind[:-1]
     code[ind] = spm
     data = np.reshape(codebook[code], weights.shape)
     np.copyto(weights, data)
